@@ -166,7 +166,7 @@ internal class Script<TContext, TReturn> : Script, IScript<TContext>, IScript<TC
         catch (System.Exception ex)
         {
             IsError = true;
-            throw new ScriptException("Script compilation failed", ex);
+            throw new ScriptException($"Script compilation {_definition} failed", ex);
         }
         finally
         {

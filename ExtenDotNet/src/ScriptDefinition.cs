@@ -35,7 +35,7 @@ public class ScriptDefinition(
         return Key.GetHashCode() ^ ContextType.GetHashCode() ^ ReturnType.GetHashCode();
     }
         
-    public override string ToString() => Key;
+    public override string ToString() => $"{Key} [({ContextType}) => {ReturnType}]";
 }
 
 public class ScriptDefinition<TContext>(
