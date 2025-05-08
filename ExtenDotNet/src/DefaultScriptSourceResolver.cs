@@ -3,8 +3,9 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace ExtenDotNet;
 
-internal class DefaultScriptSourceResolver(string rootDir) : IScriptSourceResolver
+internal class DefaultScriptSourceResolver(string rootDir, System.Text.Encoding? encoding = null) : IScriptSourceResolver
 {
+    public System.Text.Encoding Encoding = encoding ?? System.Text.Encoding.UTF8;
     public IObservable<string>? SourceChanged => null;
 
     private string ResolvePath(string path)
@@ -29,10 +30,10 @@ internal class DefaultScriptSourceResolver(string rootDir) : IScriptSourceResolv
     }
 
     public SourceText ResolveReferenceSource(IScriptDefinition registration, string path)
-        => SourceText.From(File.ReadAllText(path));
+        => SourceText.From(File.ReadAllText(path), encoding);
 
     public SourceText ResolveSource(IScriptDefinition registration)
-        => SourceText.From(File.ReadAllText(ResolveSourcePath(registration)));
+        => SourceText.From(File.ReadAllText(ResolveSourcePath(registration)), encoding);
 
     public string ResolveSourcePath(IScriptDefinition registration)
         => ResolvePath(registration.Key + ".csx");

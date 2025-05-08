@@ -41,7 +41,7 @@ public interface IScriptFactory: IDisposable
     IScript GetScript(IScriptDefinition definition);
     IScript<TScope, TResult> GetScript<TScope, TResult>(ScriptDefinition<TScope, TResult> definition);
     IScript<TScope> GetScript<TScope>(ScriptDefinition<TScope> definition);
-    Task TryCompileScriptAsync(string path, Type contextType, Type returnType, string content, CancellationToken cancellationToken = default);
+    Task TryCompileScriptAsync(string path, Type contextType, Type returnType, string content, System.Text.Encoding? encoding = null, CancellationToken cancellationToken = default);
     void ClearCache();
     void ClearCache(IScriptDefinition definition);
     void ClearCache(string path);

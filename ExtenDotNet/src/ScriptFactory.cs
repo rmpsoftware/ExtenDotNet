@@ -130,6 +130,7 @@ public class ScriptFactory : IScriptFactory
         Type contextType,
         Type returnType,
         string content,
+        System.Text.Encoding? encoding = null,
         CancellationToken cancellationToken = default
     )
     {
@@ -137,7 +138,7 @@ public class ScriptFactory : IScriptFactory
         var def = new ScriptDefinition(path, contextType, returnType, required: true, cache: false);
         
         var m = CREATE_FROM_CONTENT_METHOD.MakeGenericMethod(def.ContextType, def.ReturnType);
-        var script = (IScript)m.Invoke(this, [def, SourceText.From(content)])!;
+        var script = (IScript)m.Invoke(this, [def, SourceText.From(content, encoding)])!;
         await script.CompileAsync(ct: cancellationToken);
     }
     

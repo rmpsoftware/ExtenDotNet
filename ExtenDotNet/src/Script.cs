@@ -180,7 +180,7 @@ internal class Script<TContext, TReturn> : Script, IScript<TContext>, IScript<TC
     public virtual async Task<TReturn?> InvokeAsync(TContext context, CancellationToken ct = default)
     {
         if (IsError)
-            throw new ScriptException("Script compilation failed earlier");
+            throw new ScriptException($"Script compilation of script {_definition} failed earlier");
         if (LogicIsEmpty)
             return default;
 

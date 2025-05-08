@@ -87,6 +87,8 @@ public class ExtensionPoint<T> : ScriptDefinition<ScriptScope<ExtensionScriptCon
             throw new ArgumentException($"ExtensionPoint {Key} resolved to {extension?.GetType().Name} but expected {typeof(T).Name}");
         OnResolved?.Invoke(t);
     }
+    
+    public override string ToString() => $"{Key} [Extension<{typeof(T).Name}>]";
 
     // public T Resolve(IServiceProvider provider)
     //     => provider.GetRequiredService<SingletonExtensionRegistry>().Resolve<T>(this, provider);

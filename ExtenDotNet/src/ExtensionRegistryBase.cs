@@ -84,6 +84,12 @@ internal abstract class ExtensionRegistryBase(
                 _cache[key] = new ExtensionEntry(r, path);
             return r;
         }
+        catch(Exception e)
+        {
+            if(e is not ScriptException && e is not ExtensionExcepton)
+                throw new ScriptException($"ExtensionPoint {key} failed to resolve", e);
+            throw;
+        }
         finally
         {
             sem.Release();

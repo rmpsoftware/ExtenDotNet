@@ -131,7 +131,7 @@ public sealed class ScriptPreprocessor: IScriptPreprocessor
                     sb.AppendLine(line);
             }
             
-            sourceText = SourceText.From(sb.ToString());
+            sourceText = SourceText.From(sb.ToString(), scriptContent.Encoding);
         }
         
         return new(sourceText, usings, dllImports, refs);
