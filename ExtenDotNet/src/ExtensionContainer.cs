@@ -1,3 +1,5 @@
+using System.Reflection;
+
 namespace ExtenDotNet;
 
 public interface IExtensionContainer<T> where T: class
@@ -9,11 +11,18 @@ internal class ExtensionContainer
 {
     internal static object Create(IExtensionRegistry registry, IExtensionPoint ext, IServiceProvider provider)
     {
-        return typeof(ExtensionContainer<>)
-            .MakeGenericType(ext.ExtensionType)
-            .GetConstructors()
-            .First()
-            .Invoke(null, [registry, ext, provider])!;
+        var type = typeof(ExtensionContainer<>).MakeGenericType(ext.ExtensionType);
+        var ctor = type.GetConstructor(
+            BindingFlags.Instance | BindingFlags.NonPublic, // internal constructor is non-public
+            binder: null,
+            types: [ 
+                typeof(IExtensionRegistry), 
+                typeof(IExtensionPoint), 
+                typeof(IServiceProvider) 
+            ],
+            modifiers: null
+        );
+        return ctor!.Invoke([registry, ext, provider])!;
     }
 }
 
