@@ -142,6 +142,18 @@ public class ScriptFactory : IScriptFactory
         await script.CompileAsync(ct: cancellationToken);
     }
     
+    public async Task TryCompileScriptAsync(
+        IScriptDefinition def,
+        CancellationToken cancellationToken = default
+    ) => await TryCompileScriptAsync(
+        SourceResolver.ResolveSourcePath(def)!,
+        def.ContextType,
+        def.ReturnType,
+        SourceResolver.ResolveSource(def)?.ToString() ?? string.Empty,
+        encoding: null,
+        cancellationToken: cancellationToken
+    );
+    
     public IScript<TContext, TReturn> GetScript<TContext, TReturn>(
         ScriptDefinition<TContext, TReturn> reg
     ) => CreateInternal<TContext, TReturn>(reg);

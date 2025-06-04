@@ -6,21 +6,29 @@ using Microsoft.Extensions.Options;
 
 namespace ExtenDotNet;
 
-internal abstract class ExtensionRegistryBase(
-    IScriptFactory _factory,
-    IServiceProvider _provider,
-    IOptions<ExtensionRegistryOpts> opts,
-    ILogger? logger = null
-)
+internal abstract class ExtensionRegistryBase
 {
-    protected readonly ILogger? _logger = logger;
+    protected readonly ILogger? _logger;
     protected readonly ConcurrentDictionary<IExtensionPoint, ExtensionEntry> _cache = [];
     protected readonly Dictionary<IExtensionPoint, SemaphoreSlim> _compilationLocks = [];
     protected bool _disposed = false;
-    protected readonly IOptions<ExtensionRegistryOpts> _opts = opts;
-    protected readonly List<IExtensionPoint> _registeredExtensionPoints = opts.Value.RegisteredExtensionPoints.ToList();
-    
+    protected readonly IOptions<ExtensionRegistryOpts> _opts;
+    protected readonly List<IExtensionPoint> _registeredExtensionPoints;
     public IEnumerable<IExtensionPoint> RegisteredExtensions => _registeredExtensionPoints;
+    
+    public ExtensionRegistryBase(
+        IScriptFactory _factory,
+        IServiceProvider _provider,
+        IOptions<ExtensionRegistryOpts> opts,
+        ILogger? logger = null
+    )
+    {
+        factory = _factory;
+        provider = _provider;
+        _logger = logger;
+        _opts = opts;
+        _registeredExtensionPoints = opts.Value.RegisteredExtensionPoints.ToList();
+    }
     
     internal virtual async Task<T?> ResolveInternalAsync<T>(IExtensionPoint key, IServiceProvider provider) where T: class
     {
@@ -38,7 +46,7 @@ internal abstract class ExtensionRegistryBase(
             if(_cache.TryGetValue(key, out res))
                 return (T?)res.Value;
                 
-            var s = ((Script?)_factory.GetScript(key))?.As<ScriptScope<ExtensionScriptContext>>();
+            var s = ((Script?)factory.GetScript(key))?.As<ScriptScope<ExtensionScriptContext>>();
             T? r = null;
             string? path = null;
             if(s == null)
@@ -46,13 +54,13 @@ internal abstract class ExtensionRegistryBase(
                 if(key.HasDefaultImplementation)
                 {
                     r = (T)key.GetDefaultImplementation(provider);
-                    path = _factory.GetScriptPath(key);
+                    path = factory.GetScriptPath(key);
                 }
             }
             else
             {
                 await s.CompileAsync();
-                var context = new ExtensionScriptContext(_provider);
+                var context = new ExtensionScriptContext(provider);
                 
                 await s.InvokeAsync(new(context));
                 var ir = context.Result;
@@ -122,7 +130,7 @@ internal abstract class ExtensionRegistryBase(
             return;
         }
         _registeredExtensionPoints.Add(registration);
-        _factory.DefineScript(registration);
+        factory.DefineScript(registration);
         _logger?.LogInformation("Registered Extension {key}", registration.Key);
     }
     
@@ -132,7 +140,9 @@ internal abstract class ExtensionRegistryBase(
     protected static readonly MethodInfo RESOLVE_ASYNC_METHOD = typeof(ExtensionRegistryBase)
         .GetMethod(nameof(ResolveInternalAsync), BindingFlags.NonPublic | BindingFlags.Instance)
         ?? throw new InvalidOperationException("ResolveInternalAsync method not found");
-    
+    private readonly IScriptFactory factory;
+    private readonly IServiceProvider provider;
+
     public T Resolve<T>(ExtensionPoint<T> key, IServiceProvider provider) where T: class 
         => ResolveInternal<T>(key, provider)!;
         
