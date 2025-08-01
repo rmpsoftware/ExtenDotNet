@@ -43,11 +43,11 @@ internal abstract class Script(IScriptDefinition reg, string? filePath): IDispos
     public bool IsCompiled { get; protected set; } = false;
     public string? FilePath { get; protected set; } = filePath;
     
-    internal IEnumerable<ScriptDllCompilationresult>? Dependencies => _dependencies;
-    protected List<ScriptDllCompilationresult>? _dependencies = null;
-    
-    protected IEnumerable<string>? _references;
-    public IEnumerable<string>? References => _references;
+    internal IEnumerable<ScriptDllCompilationresult> Dependencies => _dependencies;
+    protected List<ScriptDllCompilationresult> _dependencies = [];
+
+    protected List<string> _references = [];
+    public IEnumerable<string> References => _references;
     
     public abstract void Dispose();
     public abstract void Compile(CancellationToken ct = default);
@@ -95,6 +95,8 @@ internal class Script<TContext, TReturn> : Script, IScript<TContext>, IScript<TC
         _opts        = options;
         _factory     = factory;
         _content     = content;
+        if(content.References != null)
+            _references = content.References.ToList();
         LogicIsEmpty = string.IsNullOrWhiteSpace(_content.SourceText.ToString());
     }
 
@@ -160,7 +162,10 @@ internal class Script<TContext, TReturn> : Script, IScript<TContext>, IScript<TC
             );
             _script = res.CreateDelegate(ct);
             GC.Collect();
-            _references = customResolver.References;
+            _references = _references
+                .Concat(customResolver.References)
+                .Distinct()
+                .ToList();
             IsCompiled = true;
         }
         catch (System.Exception ex)

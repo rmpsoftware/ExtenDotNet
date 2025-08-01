@@ -1,5 +1,7 @@
 using System.Collections.Immutable;
 using System.Text;
+using ExtenDotNet.Helpers;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
@@ -61,79 +63,71 @@ public sealed class ScriptPreprocessor: IScriptPreprocessor
     private const string REGION = "#region";
     private const string ENDREGION = "#endregion";
     
-    public ScriptPreprocessResult Preprocess(SourceText scriptContent, CSharpParseOptions? parseOptions = null, bool getUsings = true)
+    public ScriptPreprocessResult Preprocess(SourceText scriptContent, IScriptSourceResolver sourceResolver, CSharpParseOptions? parseOptions = null, bool getUsings = true)
     {
         var usings     = getUsings && AutoUsings ? GetUsings(scriptContent, parseOptions) : null;
-        var sourceText = scriptContent;
         var dllImports = new List<string>();
         var refs       = new List<string>();
         
-        if(ExcludeUnderscoreLoads || EnableDllScripts || RemovedRegions.Length == 0)
+        var sb = new StringBuilder();
+        var inRegion = new Stack<string>();
+        foreach(var l in scriptContent.Lines)
         {
-            var sb = new StringBuilder();
-            var inRegion = new Stack<string>();
-            foreach(var l in scriptContent.Lines)
+            if(l.Text == null)
+                continue;
+            var line = l.ToString();
+            var trimmed = line.ToString().TrimStart();
+            trimmed = trimmed.Split(NEWLINE_SEP, StringSplitOptions.TrimEntries)[0];
+            var handled = false;
+            
+            if(trimmed.StartsWith(LOAD))
             {
-                if(l.Text == null)
-                    continue;
-                var line = l.ToString();
-                var trimmed = line.ToString().TrimStart();
-                trimmed = trimmed.Split(NEWLINE_SEP, StringSplitOptions.TrimEntries)[0];
-                var handled = false;
-                
-                if(ExcludeUnderscoreLoads || EnableDllScripts)
+                var path = trimmed.Substring(LOAD.Length).Trim().Trim('"');
+                var fn = Path.GetFileName(path);
+                if(ExcludeUnderscoreLoads && fn.StartsWith('_'))
                 {
-                    if(trimmed.StartsWith(LOAD))
-                    {
-                        var path = trimmed.Substring(LOAD.Length).Trim().Trim('"');
-                        var fn = Path.GetFileName(path);
-                        if(ExcludeUnderscoreLoads && fn.StartsWith('_'))
-                        {
-                            sb.AppendLine("//"+line);
-                            handled = true;
-                        }
-                        else if(EnableDllScripts)
-                        {
-                            if(IsDllImportPath(fn))
-                            {
-                                sb.AppendLine("//"+line);
-                                dllImports.Add(path);
-                                handled = true;
-                            }
-                            else
-                            {
-                                refs.Add(path);
-                            }
-                        }
-                    }
+                    sb.AppendLine("//"+line);
+                    handled = true;
                 }
-                
-                if(RemovedRegions.Length > 0)
+                else if(EnableDllScripts && IsDllImportPath(fn))
                 {
-                    if(trimmed.StartsWith(REGION))
-                    {
-                        var region = trimmed.Substring(REGION.Length).Trim();
-                        inRegion.Push(region);
-                    }
-                    
-                    var isPreamble = inRegion.Intersect(RemovedRegions).Any();
-                    if(isPreamble)
-                    {
-                        sb.AppendLine("//"+line);
-                        handled = true;
-                    }
-                    
-                    if(trimmed.StartsWith(ENDREGION))
-                        inRegion.Pop();
+                    sb.AppendLine("//"+line);
+                    dllImports.Add(path);
+                    handled = true;
                 }
-                
-                if(!handled)
-                    sb.AppendLine(line);
+                else
+                {
+                    refs.Add(path);
+                }
             }
             
-            sourceText = SourceText.From(sb.ToString(), scriptContent.Encoding);
+            if(RemovedRegions.Length > 0)
+            {
+                if(trimmed.StartsWith(REGION))
+                {
+                    var region = trimmed.Substring(REGION.Length).Trim();
+                    inRegion.Push(region);
+                }
+                
+                var isPreamble = inRegion.Intersect(RemovedRegions).Any();
+                if(isPreamble)
+                {
+                    sb.AppendLine("//"+line);
+                    handled = true;
+                }
+                
+                if(trimmed.StartsWith(ENDREGION))
+                    inRegion.Pop();
+            }
+            
+            if(!handled)
+                sb.AppendLine(line);
         }
         
-        return new(sourceText, usings, dllImports, refs);
+        var sourceText = SourceText.From(sb.ToString(), scriptContent.Encoding);
+        var allRefs = refs.Concat(dllImports);
+        //TODO: recursively collect all references
+        return new(sourceText, usings, dllImports, allRefs);
     }
+    
 }

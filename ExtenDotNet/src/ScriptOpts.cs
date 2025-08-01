@@ -149,7 +149,7 @@ internal class CustomSourceResolver(
     {
         var content = File.ReadAllText(resolvedPath, encoding);
         var src = SourceText.From(content, encoding);
-        var result = preprocessor.Preprocess(src, parseOptions, getUsings: false);
+        var result = preprocessor.Preprocess(src, resolver, parseOptions, getUsings: false);
         if(result.References != null)
         {
             foreach(var r in result.References)

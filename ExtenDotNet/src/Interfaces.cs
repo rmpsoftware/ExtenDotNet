@@ -20,7 +20,7 @@ public record ScriptPreprocessResult(
 
 public interface IScriptPreprocessor
 {
-    ScriptPreprocessResult Preprocess(SourceText text, CSharpParseOptions? parseOptions = null, bool getUsings = true);
+    ScriptPreprocessResult Preprocess(SourceText text, IScriptSourceResolver sourceResolver, CSharpParseOptions? parseOptions = null, bool getUsings = true);
     bool IsDllImportPath(string path);
 }
 

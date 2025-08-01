@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Reactive.Linq;
 using System.Reflection;
+using ExtenDotNet.Helpers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
@@ -113,8 +114,18 @@ public class ScriptFactory : IScriptFactory
             throw new ScriptException($"Script {def} return type mismatch: {def.ReturnType} != {typeof(TReturn)}");
             
         var opts = _opts.ScriptOpts;
-        var proc = Preprocessor.Preprocess(content, opts.ParseOptions);
+        var proc = Preprocessor.Preprocess(content, SourceResolver, opts.ParseOptions);
         var path = SourceResolver.ResolveSourcePath(def)!;
+        if(proc.References != null)
+        {
+            proc = proc with
+            {
+                References = proc.References
+                    .Select(e => SourceResolver.ResolveReferencePath(def, e, path))
+                    .Where(e => e != null)
+                    .ToList()!
+            };
+        }
         var res = new Script<TContext, TReturn>(
             def,
             proc,
@@ -207,7 +218,7 @@ public class ScriptFactory : IScriptFactory
                 return res;
                 
             var text = SourceResolver.ResolveReferenceSource(parentRegistration, path);
-            var result = Preprocessor.Preprocess(text, opts.ParseOptions);
+            var result = Preprocessor.Preprocess(text, SourceResolver, opts.ParseOptions);
             
             var dependencies = new List<ScriptDllCompilationresult>();
             if(result.LibraryScripts != null)
@@ -429,10 +440,9 @@ public class ScriptFactory : IScriptFactory
             foreach(var key in _cache.Keys.ToList())
             {
                 var script = _cache[key];
-                if(script.FilePath == filePath 
-                    || (script.Dependencies != null && script.Dependencies.Any(removedDllScripts.Contains))
-                    || (script.References != null && script.References.Contains(filePath))
-                )
+                if((script.FilePath != null && PathHelper.IsPathEqual(script.FilePath, filePath))
+                    || script.Dependencies.Any(removedDllScripts.Contains)
+                    || script.References.Any(e => PathHelper.IsPathEqual(e, filePath)))
                 {
                     EvictScriptFromCache(key);
                 }
