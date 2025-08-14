@@ -18,6 +18,8 @@ public class ScriptOpts
     
     public CSharpParseOptions ParseOptions => new(LanguageVersion);
     
+    public bool EnableDebuggerSupport { get; init; } = false;
+    
     public IEnumerable<MetadataReference> MetadataReferences => _scriptOptions.MetadataReferences;
     
     internal ScriptOpts() {}
@@ -55,6 +57,9 @@ public class ScriptOpts
     }
     
 #region ScripOptions
+    public ScriptOpts WithEnableDebuggerSupport(bool value)
+        => new(this) { EnableDebuggerSupport = value };
+        
     public ScriptOpts WithFilePath(string? filePath)
         => new(this) { _scriptOptions = _scriptOptions.WithFilePath(filePath) };
 

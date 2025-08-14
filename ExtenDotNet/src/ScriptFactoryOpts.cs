@@ -10,12 +10,12 @@ public class ScriptFactoryOpts
     public static ScriptFactoryOpts Default(string dir, ScriptOpts scriptOpts) 
         => new(new DefaultScriptSourceResolver(dir), scriptOpts);
     
-    public bool AllowOnlyDefinedScripts { get; init; } = false;
-    public bool EnableHotReload { get; init; }         = true;
+    public bool AllowOnlyDefinedScripts { get; init; }   = false;
+    public bool EnableHotReload { get; init; }           = true;
     public ScriptOpts ScriptOpts { get; init; }
     public IScriptPreprocessor Preprocessor { get; init; }
     public IScriptSourceResolver SourceResolver { get; init; }
-    
+
     internal ImmutableArray<IScriptDefinition> Definitions { get; init; } = [];
     
     internal ScriptFactoryOpts(
@@ -56,4 +56,5 @@ public class ScriptFactoryOpts
         
     public ScriptFactoryOpts Define(ScriptDefinition def)
         => new(this) { Definitions = [.. Definitions, def] };
+        
 }

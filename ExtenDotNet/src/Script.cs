@@ -5,6 +5,8 @@ using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.CodeAnalysis.Scripting.Hosting;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Emit;
 
 public interface IScriptScope<T>
 {
@@ -154,13 +156,35 @@ internal class Script<TContext, TReturn> : Script, IScript<TContext>, IScript<TC
             {
                 loader.RegisterDependency(a.Assembly);
             }
-            var res = CSharpScript.Create<TReturn>(
+            var script = CSharpScript.Create<TReturn>(
                 _content.SourceText.ToString(),
                 scriptOpts,
                 globalsType: typeof(TContext),
                 assemblyLoader: loader
             );
-            _script = res.CreateDelegate(ct);
+            
+            if(_opts.EnableDebuggerSupport) 
+            {
+                var compilation = script.GetCompilation();
+                compilation = compilation.WithOptions(
+                    compilation.Options.WithOptimizationLevel(OptimizationLevel.Debug)
+                );
+                using var peStream = new MemoryStream();
+                using var pdbStream = new MemoryStream();
+                var emitResult = compilation.Emit(
+                    peStream, 
+                    pdbStream,
+                    options: new EmitOptions(debugInformationFormat: DebugInformationFormat.PortablePdb),
+                    cancellationToken: ct
+                );
+                peStream.Position = 0;
+                pdbStream.Position = 0;
+
+                // Load the assembly with symbols so VS Code can match breakpoints
+                var assembly = AssemblyLoadContext.Default.LoadFromStream(peStream, pdbStream);
+            }
+            
+            _script = script.CreateDelegate(ct);
             GC.Collect();
             _references = _references
                 .Concat(customResolver.References)
