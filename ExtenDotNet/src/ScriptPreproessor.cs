@@ -60,6 +60,7 @@ public sealed class ScriptPreprocessor: IScriptPreprocessor
         => path.EndsWith(".dll.csx");
         
     private const string LOAD = "#load";
+    private const string IMPORT = "#r";
     private const string REGION = "#region";
     private const string ENDREGION = "#endregion";
     
@@ -78,7 +79,9 @@ public sealed class ScriptPreprocessor: IScriptPreprocessor
             var line = l.ToString();
             var trimmed = line.ToString().TrimStart();
             trimmed = trimmed.Split(NEWLINE_SEP, StringSplitOptions.TrimEntries)[0];
-            var handled = false;
+            
+            if(trimmed.StartsWith(IMPORT) || trimmed.StartsWith(LOAD))
+                line = line.Replace("\\", "/"); //linux cannot handle backslashes in paths
             
             if(trimmed.StartsWith(LOAD))
             {
@@ -86,20 +89,20 @@ public sealed class ScriptPreprocessor: IScriptPreprocessor
                 var fn = Path.GetFileName(path);
                 if(ExcludeUnderscoreLoads && fn.StartsWith('_'))
                 {
-                    sb.AppendLine("//"+line);
-                    handled = true;
+                    line = "//" + line;
                 }
                 else if(EnableDllScripts && IsDllImportPath(fn))
                 {
-                    sb.AppendLine("//"+line);
+                    line = "//" + line;
                     dllImports.Add(path);
-                    handled = true;
                 }
                 else
                 {
                     refs.Add(path);
                 }
             }
+            
+            
             
             if(RemovedRegions.Length > 0)
             {
@@ -112,16 +115,14 @@ public sealed class ScriptPreprocessor: IScriptPreprocessor
                 var isPreamble = inRegion.Intersect(RemovedRegions).Any();
                 if(isPreamble)
                 {
-                    sb.AppendLine("//"+line);
-                    handled = true;
+                    line = "//" + line;
                 }
                 
                 if(trimmed.StartsWith(ENDREGION))
                     inRegion.Pop();
             }
             
-            if(!handled)
-                sb.AppendLine(line);
+            sb.AppendLine(line);
         }
         
         var sourceText = SourceText.From(sb.ToString(), scriptContent.Encoding);
