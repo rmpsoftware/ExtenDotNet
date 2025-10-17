@@ -81,7 +81,10 @@ public sealed class ScriptPreprocessor: IScriptPreprocessor
             trimmed = trimmed.Split(NEWLINE_SEP, StringSplitOptions.TrimEntries)[0];
             
             if(trimmed.StartsWith(IMPORT) || trimmed.StartsWith(LOAD))
+            {
                 line = line.Replace("\\", "/"); //linux cannot handle backslashes in paths
+                trimmed = trimmed.Replace("\\", "/");
+            }
             
             if(trimmed.StartsWith(LOAD))
             {
@@ -101,7 +104,6 @@ public sealed class ScriptPreprocessor: IScriptPreprocessor
                     refs.Add(path);
                 }
             }
-            
             
             
             if(RemovedRegions.Length > 0)
