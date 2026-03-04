@@ -10,7 +10,7 @@
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
-      "program": "${workspaceFolder}/ExtenDotNet/bin/Debug/net8.0/ExtenDotNet.dll",
+      "program": "${workspaceFolder}/ExtenDotNet/bin/Debug/net10.0/ExtenDotNet.dll",
       "args": [],
       "cwd": "${workspaceFolder}",
       "console": "internalConsole",

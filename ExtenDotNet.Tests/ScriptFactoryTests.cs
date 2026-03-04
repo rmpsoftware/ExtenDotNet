@@ -14,7 +14,7 @@ public class ScriptFactoryTests
     public Dictionary<string, string> Sources { get; } = new()
     {
         ["_imports.csx"] = """
-            #r "ExtenDotNet\bin\Debug\net8.0\ExtenDotNet.dll"
+            #r "ExtenDotNet\bin\Debug\net10.0\ExtenDotNet.dll"
         """,
         
         ["interfaces.dll.csx"] = """
