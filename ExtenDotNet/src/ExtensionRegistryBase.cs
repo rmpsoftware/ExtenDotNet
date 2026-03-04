@@ -80,7 +80,7 @@ internal abstract class ExtensionRegistryBase
             
             if(r == null && key.Required)
             {
-                throw new ScriptException($"ExtensionPoint {key} is required implementation was provided");    
+                throw new ScriptException($"ExtensionPoint {key} is required but implementation was not provided");    
             }
                 
             if(r is IOnInit init)
