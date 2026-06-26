@@ -55,6 +55,8 @@ public interface IScriptFactory: IDisposable
     void DefineScript<TContext>(string key, bool required = false, bool cache = true);
     void DefineScript<TContext, TReturn>(string key, bool required = false, bool cache = true);
     void DefineScripts(IEnumerable<IScriptDefinition> definitions);
+    bool IsScriptDefined(string key);
+    bool IsScriptDefined(IScriptDefinition definition);
     
 }
 

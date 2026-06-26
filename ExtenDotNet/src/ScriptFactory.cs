@@ -195,6 +195,18 @@ public class ScriptFactory : IScriptFactory
         return SourceResolver.ResolveSourcePath(registration);
     }
     
+    public bool IsScriptDefined(string key)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return _definitions.Any(e => e.Key == key);
+    }
+    
+    public bool IsScriptDefined(IScriptDefinition definition)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return _definitions.Contains(definition);
+    }
+    
     internal ScriptDllCompilationresult CompileDllScript(
         IScriptDefinition parentRegistration,
         string path,
