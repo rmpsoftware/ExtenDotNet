@@ -148,10 +148,21 @@ internal class CustomSourceResolver(
 ) : SourceFileResolver([], null), IProvideAdditionalReferencesSourceResolver
 {
     private HashSet<string> _references = [];
+    // TODO: Resolve physical paths before deduplicating:
+    // - Path.GetFullPath does not resolve Windows junctions or symbolic links.
+    // - Use GetFinalPathNameByHandle on Windows and realpath on Unix systems.
+    // - Or use content hashes, but: distinct files may intentionally have identical content ?!
+    private readonly HashSet<string> _loadedPaths = new(
+        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal
+    );
     public IEnumerable<string> References => _references;
 
     public override SourceText ReadText(string resolvedPath)
     {
+        var canonicalPath = Path.GetFullPath(resolvedPath);
+        if (!_loadedPaths.Add(canonicalPath))
+            return SourceText.From(string.Empty, encoding);
+
         var content = File.ReadAllText(resolvedPath, encoding);
         var src = SourceText.From(content, encoding);
         var result = preprocessor.Preprocess(src, resolver, parseOptions, getUsings: false);
